@@ -1,44 +1,28 @@
-FROM alpine:3.6
+FROM alpine:3.9
 
-ENV VERSION v2.14.0
+ARG VCS_REF
+ARG BUILD_DATE
 
-MAINTAINER Trevor Hartman <trevorhartman@gmail.com>
+# Metadata
+LABEL org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.name="helm-kubectl" \
+      org.label-schema.url="https://hub.docker.com/r/dtzar/helm-kubectl/" \
+      org.label-schema.vcs-url="https://github.com/dtzar/helm-kubectl" \
+      org.label-schema.build-date=$BUILD_DATE
 
-WORKDIR /
+# Note: Latest version of kubectl may be found at:
+# https://aur.archlinux.org/packages/kubectl-bin/
+ENV KUBE_LATEST_VERSION="v1.14.3"
+# Note: Latest version of helm may be found at:
+# https://github.com/kubernetes/helm/releases
+ENV HELM_VERSION="v2.14.1"
 
-RUN apk --update add ca-certificates wget python curl tar jq
+RUN apk add --no-cache ca-certificates bash git openssh curl \
+    && wget -q https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl \
+    && chmod +x /usr/local/bin/kubectl \
+    && wget -q https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz -O - | tar -xzO linux-amd64/helm > /usr/local/bin/helm \
+    && chmod +x /usr/local/bin/helm
 
-# Install Helm
-ENV FILENAME helm-${VERSION}-linux-amd64.tar.gz
-ENV HELM_URL https://storage.googleapis.com/kubernetes-helm/${FILENAME}
+WORKDIR /config
 
-
-RUN echo $HELM_URL
-
-RUN curl -o /tmp/$FILENAME ${HELM_URL} \
-  && tar -zxvf /tmp/${FILENAME} -C /tmp \
-  && mv /tmp/linux-amd64/helm /bin/helm \
-  && rm -rf /tmp
-
-# Helm plugins require git
-# helm-diff requires bash, curl
-RUN apk --update add git bash
-
-# Install envsubst [better than using 'sed' for yaml substitutions]
-ENV BUILD_DEPS="gettext"  \
-    RUNTIME_DEPS="libintl"
-
-RUN set -x && \
-    apk add --update $RUNTIME_DEPS && \
-    apk add --virtual build_deps $BUILD_DEPS &&  \
-    cp /usr/bin/envsubst /usr/local/bin/envsubst && \
-    apk del build_deps
-
-# Install Helm plugins
-RUN helm init --client-only
-# workaround for an issue in updating the binary of `helm-diff`
-ENV HELM_PLUGIN_DIR /.helm/plugins/helm-diff
-# Plugin is downloaded to /tmp, which must exist
-RUN mkdir /tmp
-RUN helm plugin install https://github.com/viglesiasce/helm-gcs.git
-RUN helm plugin install https://github.com/databus23/helm-diff
+CMD bash
