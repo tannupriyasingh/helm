@@ -24,6 +24,13 @@ RUN apk add --no-cache ca-certificates bash git openssh curl \
     && wget -q https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz -O - | tar -xzO linux-amd64/helm > /usr/local/bin/helm \
     && chmod +x /usr/local/bin/helm
 
+caFile: ""
+cache: /home/grantwra/.helm/repository/cache/acv-index.yaml
+certFile: ""
+keyFile: ""
+name: acv
+url: http://charts.int.acvauctions.com
+
 WORKDIR /config
 
 CMD bash
