@@ -1,6 +1,6 @@
 # Custome Docker Image
 
-Image that has Kube, Helm, Git, Docker Compose baked in it.
+Image that has AWS CLI, Kube, Helm, Git, Docker Compose baked in it.
 
 Use:
 
